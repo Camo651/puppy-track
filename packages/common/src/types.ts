@@ -21,7 +21,7 @@ export const EVENT_META: Record<
 > = {
   pee: { label: "Pee", emoji: "💦", kind: "instant" },
   poop: { label: "Poop", emoji: "💩", kind: "instant" },
-  nap: { label: "Nap", emoji: "😴", kind: "span" },
+  nap: { label: "Nap", emoji: "💤", kind: "span" },
   playtime: { label: "Playtime", emoji: "🎾", kind: "span" },
   walk: { label: "Walk", emoji: "🦮", kind: "span" },
   training: { label: "Training", emoji: "🎓", kind: "span" },
@@ -60,9 +60,9 @@ export const TARGET_META: Record<
 > = {
   pee: { label: "Pee", emoji: "💦", verb: "might need to pee" },
   poop: { label: "Poop", emoji: "💩", verb: "might need to poop" },
-  nap: { label: "Nap", emoji: "😴", verb: "is getting sleepy" },
-  energy_high: { label: "Zoomies", emoji: "⚡", verb: "is getting the zoomies" },
-  energy_low: { label: "Winding down", emoji: "🥱", verb: "is winding down" },
+  nap: { label: "Nap", emoji: "💤", verb: "might be getting sleepy" },
+  energy_high: { label: "Zoomies", emoji: "⚡", verb: "might be getting zoomies" },
+  energy_low: { label: "Winding down", emoji: "🥱", verb: "might be winding down" },
 };
 
 // The event_type column on predictions holds either a real event type or a
