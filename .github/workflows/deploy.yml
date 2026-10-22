@@ -19,4 +19,11 @@ jobs:
       # Trigger the NSM deploy webhook for this project. Configure the project on
       # NSM and store its deploy key as the NSM_KEY secret.
       - name: Deploy via NSM
-        run: curl -fsS "https://nsm.mosaiq.dev/deploy/puppy-track/${{ secrets.NSM_KEY }}"
+        env:
+          NSM_KEY: ${{ secrets.NSM_KEY }}
+        run: |
+          if [ -z "$NSM_KEY" ]; then
+            echo "::error::NSM_KEY secret is not set. Add it under Settings > Secrets and variables > Actions, then re-run." >&2
+            exit 1
+          fi
+          curl -fsS "https://nsm.mosaiq.dev/deploy/puppy-track/${NSM_KEY}"

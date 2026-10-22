@@ -9,14 +9,15 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=${PORT}
-      # SQLite lives on the mounted volume, not in the image.
-      - DB_DIR=/data
     env_file:
       - .env
     volumes:
+      # The app stores its SQLite DB in the repo-root `.db` directory. In
+      # production NSM provides the persistent volume via VOLUME_PATH; locally it
+      # defaults to ./volumes so `docker compose up` works without extra config.
       - type: bind
-        source: ${VOLUME_PATH}/db
-        target: /data
+        source: ${VOLUME_PATH:-./volumes}/db
+        target: /app/.db
         bind:
           create_host_path: true
     healthcheck:

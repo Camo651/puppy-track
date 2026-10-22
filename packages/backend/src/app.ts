@@ -4,6 +4,7 @@ import cors from "cors";
 import { API_PREFIX } from "@puppy-track/common";
 import { config } from "./config";
 import { areaLog, serializeError } from "./logger";
+import { httpLogger } from "./middleware/httpLogger";
 import { apiRouter } from "./routes";
 
 const log = areaLog("http");
@@ -12,6 +13,7 @@ export function createApp(): express.Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", true);
+  app.use(httpLogger);
   app.use(cors({ origin: true }));
   app.use(express.json({ limit: "256kb" }));
 

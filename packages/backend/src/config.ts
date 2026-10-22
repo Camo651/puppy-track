@@ -17,11 +17,21 @@ function list(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function resolveWebDir(): string {
-  const explicit = process.env.WEB_DIR;
-  if (explicit) return path.isAbsolute(explicit) ? explicit : path.resolve(repoRoot, explicit);
-  return path.resolve(repoRoot, "packages/frontend/dist");
-}
+// Analyzer tuning constants. Calibrated from backtests; part of the model's
+// behavior rather than per-deployment configuration, so they are fixed in code.
+const analyzer = {
+  intervalMs: 120_000,
+  halfLifeDays: 4,
+  confidenceThreshold: 0.35,
+  leadMinutes: 15,
+  lookbackDays: 21,
+  championModel: "context-ensemble",
+  contextWindowHours: 8,
+  scoringWindowDays: 14,
+};
+
+// How long a sign-in stays valid, in days. Slides forward on every request.
+const SESSION_TTL_DAYS = 365;
 
 export const config = {
   appEnv: process.env.APP_ENV || "local",
@@ -49,20 +59,11 @@ export const config = {
     subject: process.env.VAPID_SUBJECT || "mailto:admin@puppy-track.local",
   },
 
-  sessionTtlDays: num(process.env.SESSION_TTL_DAYS, 365),
+  sessionTtlDays: SESSION_TTL_DAYS,
 
-  analyzer: {
-    intervalMs: num(process.env.ANALYZER_INTERVAL_MS, 120_000),
-    halfLifeDays: num(process.env.ANALYZER_HALFLIFE_DAYS, 4),
-    confidenceThreshold: num(process.env.ANALYZER_CONFIDENCE_THRESHOLD, 0.35),
-    leadMinutes: num(process.env.ANALYZER_LEAD_MINUTES, 15),
-    lookbackDays: num(process.env.ANALYZER_LOOKBACK_DAYS, 21),
-    championModel: process.env.ANALYZER_CHAMPION_MODEL || "context-ensemble",
-    contextWindowHours: num(process.env.ANALYZER_CONTEXT_WINDOW_HOURS, 8),
-    scoringWindowDays: num(process.env.ANALYZER_SCORING_WINDOW_DAYS, 14),
-  },
+  analyzer,
 
-  webDir: resolveWebDir(),
+  webDir: path.resolve(repoRoot, "packages/frontend/dist"),
   webDirExists(): boolean {
     return fs.existsSync(path.join(this.webDir, "index.html"));
   },
