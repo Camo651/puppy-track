@@ -12,9 +12,11 @@ services:
     env_file:
       - .env
     volumes:
-      # The app stores its SQLite DB in the repo-root `.db` directory. In
-      # production NSM provides the persistent volume via VOLUME_PATH; locally it
-      # defaults to ./volumes so `docker compose up` works without extra config.
+      # Persistent storage for the SQLite DB. VOLUME_PATH (declared in
+      # .env.sample so NSM injects it in production) is the host directory that
+      # holds the data; it is bind-mounted to /app/.db, where the app reads and
+      # writes. Locally it defaults to ./volumes so `docker compose up` works
+      # without extra config.
       - type: bind
         source: ${VOLUME_PATH:-./volumes}/db
         target: /app/.db
