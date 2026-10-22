@@ -25,7 +25,7 @@ export function Layout() {
   const initial = (user?.globalName || user?.username || "?").slice(0, 1).toUpperCase();
 
   return (
-    <div className="app-shell mx-auto flex h-dvh w-full max-w-md flex-col bg-surface">
+    <div className="app-shell mx-auto flex h-full w-full max-w-md flex-col bg-surface">
       <header className="flex items-center justify-between border-b border-line/60 bg-surface/90 px-4 py-3 backdrop-blur">
         <button
           onClick={() => navigate("/account")}

@@ -30,17 +30,19 @@ body,
   height: 100%;
 }
 
-#root {
-  min-height: 100vh;
-  min-height: 100dvh;
-}
-
 body {
   margin: 0;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
   background-color: rgb(var(--color-surface));
   color: rgb(var(--color-ink));
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: none;
+  overscroll-behavior: none;
+}
+
+#root {
+  overflow: hidden;
 }
 
 @layer components {
