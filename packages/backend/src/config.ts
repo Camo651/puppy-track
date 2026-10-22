@@ -1,9 +1,12 @@
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
+import { API_ROUTES } from "@puppy-track/common";
 
 const repoRoot = path.resolve(__dirname, "../../..");
 dotenv.config({ path: path.join(repoRoot, ".env") });
+
+const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
 
 function num(value: string | undefined, fallback: number): number {
   const n = Number(value);
@@ -38,7 +41,7 @@ export const config = {
   isProd: (process.env.NODE_ENV || process.env.APP_ENV) === "production",
   port: num(process.env.PORT, 8080),
 
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+  frontendUrl,
 
   puppy: {
     name: process.env.PUPPY_NAME || "",
@@ -49,7 +52,7 @@ export const config = {
   discord: {
     clientId: process.env.DISCORD_CLIENT_ID || "",
     clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
-    redirectUri: process.env.DISCORD_REDIRECT_URI || "http://localhost:5173/api/auth/discord/callback",
+    redirectUri: `${frontendUrl}${API_ROUTES.AUTH_DISCORD_CALLBACK}`,
     allowedIds: list(process.env.ALLOWED_DISCORD_IDS),
   },
 
