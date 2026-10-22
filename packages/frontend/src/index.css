@@ -30,6 +30,11 @@ body,
   height: 100%;
 }
 
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 body {
   margin: 0;
   background-color: rgb(var(--color-surface));
@@ -56,6 +61,10 @@ body {
   }
   .safe-top {
     padding-top: calc(env(safe-area-inset-top) + 0.25rem);
+  }
+  .app-shell {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

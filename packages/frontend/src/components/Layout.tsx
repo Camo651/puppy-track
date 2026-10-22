@@ -25,8 +25,8 @@ export function Layout() {
   const initial = (user?.globalName || user?.username || "?").slice(0, 1).toUpperCase();
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col bg-surface">
-      <header className="safe-top sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-surface/90 px-4 py-3 backdrop-blur">
+    <div className="app-shell mx-auto flex h-dvh w-full max-w-md flex-col bg-surface">
+      <header className="flex items-center justify-between border-b border-line/60 bg-surface/90 px-4 py-3 backdrop-blur">
         <button
           onClick={() => navigate("/account")}
           className="text-lg font-bold tracking-tight"
@@ -46,11 +46,11 @@ export function Layout() {
         </button>
       </header>
 
-      <main className="flex-1 px-4 py-4">
+      <main className="flex-1 overflow-y-auto px-4 py-4">
         <Outlet />
       </main>
 
-      <nav className="safe-bottom sticky bottom-0 z-10 grid grid-cols-4 border-t border-line/60 bg-surface/95 backdrop-blur">
+      <nav className="grid grid-cols-4 border-t border-line/60 bg-surface/95 backdrop-blur">
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
