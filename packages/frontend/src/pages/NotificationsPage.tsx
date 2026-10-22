@@ -1,6 +1,6 @@
 import { EVENT_META, TARGET_META, type Prediction } from "@puppy-track/common";
 import { usePredictionFeedback, usePredictions } from "@/hooks/useApi";
-import { clockTime, timeAgo, timeUntil } from "@/lib/time";
+import { clockTime, timeUntil } from "@/lib/time";
 
 const STATUS_LABEL: Record<Prediction["status"], string> = {
   pending: "Pending",
@@ -23,7 +23,12 @@ export function NotificationsPage() {
   const feedback = usePredictionFeedback();
 
   if (isLoading) return <p className="text-muted">Loading…</p>;
-  if (!predictions || predictions.length === 0)
+
+  const upcoming = (predictions ?? [])
+    .filter((p) => p.status === "notified" || p.status === "pending")
+    .sort((a, b) => a.predictedAt - b.predictedAt);
+
+  if (upcoming.length === 0)
     return (
       <p className="text-muted">
         No predictions yet. Once the analyzer learns {`${""}`}your puppy's routine, predicted events
@@ -33,10 +38,9 @@ export function NotificationsPage() {
 
   return (
     <div className="space-y-3">
-      {predictions.map((p) => {
+      {upcoming.map((p) => {
         const meta = targetMeta(p.eventType);
         const factors = p.basis?.factors ?? p.factors ?? [];
-        const awaiting = p.status === "notified" || p.status === "pending";
         return (
           <div key={p.id} className="card p-4">
             <div className="flex items-start justify-between">
@@ -78,26 +82,23 @@ export function NotificationsPage() {
               <p className="mt-1 text-[11px] text-muted">{p.basis.evidence}</p>
             )}
 
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-muted">{timeAgo(p.createdAt)}</span>
-              {awaiting && (
-                <span className="flex gap-2">
-                  <button
-                    className="btn-ghost px-3 py-1 text-sm"
-                    disabled={feedback.isPending}
-                    onClick={() => feedback.mutate({ id: p.id, happened: false })}
-                  >
-                    Nope
-                  </button>
-                  <button
-                    className="btn-brand px-3 py-1 text-sm"
-                    disabled={feedback.isPending}
-                    onClick={() => feedback.mutate({ id: p.id, happened: true })}
-                  >
-                    It happened
-                  </button>
-                </span>
-              )}
+            <div className="mt-2 flex items-center justify-end">
+              <span className="flex gap-2">
+                <button
+                  className="btn-ghost px-3 py-1 text-sm"
+                  disabled={feedback.isPending}
+                  onClick={() => feedback.mutate({ id: p.id, happened: false })}
+                >
+                  Nope
+                </button>
+                <button
+                  className="btn-brand px-3 py-1 text-sm"
+                  disabled={feedback.isPending}
+                  onClick={() => feedback.mutate({ id: p.id, happened: true })}
+                >
+                  It happened
+                </button>
+              </span>
             </div>
           </div>
         );
