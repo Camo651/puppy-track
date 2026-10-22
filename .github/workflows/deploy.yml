@@ -1,0 +1,22 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      # Trigger the NSM deploy webhook for this project. Configure the project on
+      # NSM and store its deploy key as the NSM_KEY secret.
+      - name: Deploy via NSM
+        run: curl -fsS "https://nsm.mosaiq.dev/deploy/puppy-track/${{ secrets.NSM_KEY }}"

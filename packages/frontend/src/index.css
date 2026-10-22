@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-brand: 248 178 74;
+  --color-brand-soft: 255 236 205;
+  --color-surface: 255 247 236;
+  --color-card: 255 255 255;
+  --color-ink: 42 32 20;
+  --color-muted: 120 110 96;
+  --color-line: 232 222 206;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-brand: 248 178 74;
+    --color-brand-soft: 70 56 34;
+    --color-surface: 24 21 17;
+    --color-card: 34 30 24;
+    --color-ink: 240 234 224;
+    --color-muted: 168 158 144;
+    --color-line: 56 50 42;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: rgb(var(--color-surface));
+  color: rgb(var(--color-ink));
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+@layer components {
+  .card {
+    @apply rounded-card bg-card border border-line/70 shadow-sm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-field px-4 py-2 font-semibold transition active:scale-95;
+  }
+  .btn-brand {
+    @apply btn bg-brand text-ink;
+  }
+  .btn-ghost {
+    @apply btn bg-brand-soft text-ink;
+  }
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+  .safe-top {
+    padding-top: calc(env(safe-area-inset-top) + 0.25rem);
+  }
+}
+
+/* Energy "ramp": a gradient wedge that rises from left (Asleep) to right
+   (Extremely hyper). The track height is fixed and the thumb spans the full
+   height, so sliding never changes the component's vertical size. */
+.energy-ramp {
+  position: relative;
+  height: 3.5rem;
+}
+.energy-ramp__fill {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  background: linear-gradient(
+    90deg,
+    #6aa9ff 0%,
+    #58c7b0 28%,
+    #f4d64e 58%,
+    #f8923a 82%,
+    #f4542e 100%
+  );
+}
+.energy-ramp__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.energy-ramp__input::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+.energy-ramp__input::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+.energy-ramp__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid rgb(var(--color-brand));
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}
+.energy-ramp__input::-moz-range-thumb {
+  width: 0.5rem;
+  height: 3.5rem;
+  border: 2px solid rgb(var(--color-brand));
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}

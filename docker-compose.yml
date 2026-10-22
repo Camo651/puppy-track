@@ -1,0 +1,27 @@
+services:
+  puppy-track:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT}
+      # SQLite lives on the mounted volume, not in the image.
+      - DB_DIR=/data
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: ${VOLUME_PATH}/db
+        target: /data
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

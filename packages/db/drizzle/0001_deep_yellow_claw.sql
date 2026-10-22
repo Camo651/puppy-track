@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `end_unknown` integer DEFAULT false NOT NULL;
