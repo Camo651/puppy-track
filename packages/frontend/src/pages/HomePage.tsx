@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_ENERGY,
   ENERGY_ASLEEP,
   EVENT_META,
+  eventDisplayMeta,
   isOngoingSpan,
+  isSleep,
   type EventType,
   type PuppyEvent,
+  type SleepMetadata,
 } from "@puppy-track/common";
 import { useCreateEvent, useDeleteEvent, useEvents, useUpdateEvent } from "@/hooks/useApi";
 import { cn } from "@/lib/cn";
 import { OngoingSpans } from "@/components/OngoingSpans";
 import { NapBanner } from "@/components/NapBanner";
+import { SleepBanner } from "@/components/SleepBanner";
+import { SleepWakeSheet } from "@/components/SleepWakeSheet";
+import { type SleepAnswers } from "@/components/SleepQuestions";
 import { EnergySlider } from "@/components/EnergySlider";
 import { EnergyPopup } from "@/components/EnergyPopup";
 import { clockTime } from "@/lib/time";
@@ -29,11 +35,13 @@ function RecentBanner({ events }: { events: PuppyEvent[] }) {
       <div className="mb-2 text-sm font-semibold text-muted">Recent</div>
       {recent.length > 0 ? (
         <ul className="divide-y divide-line/60">
-          {recent.map((e) => (
+          {recent.map((e) => {
+            const meta = eventDisplayMeta(e);
+            return (
             <li key={e.id} className="flex items-center justify-between py-2">
               <span className="flex items-center gap-2">
-                <span className="text-xl">{EVENT_META[e.type].emoji}</span>
-                <span className="font-medium">{EVENT_META[e.type].label}</span>
+                <span className="text-xl">{meta.emoji}</span>
+                <span className="font-medium">{meta.label}</span>
                 {e.amount != null && (
                   <span className="text-sm text-muted">
                     {e.amount}
@@ -43,7 +51,8 @@ function RecentBanner({ events }: { events: PuppyEvent[] }) {
               </span>
               <span className="text-sm text-muted">{clockTime(e.occurredAt)}</span>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : (
         <p className="py-2 text-sm text-muted">No events yet. Tap a button below to start.</p>
@@ -60,12 +69,29 @@ export function HomePage() {
   const [justDone, setJustDone] = useState<EventType | null>(null);
   // Pending nap wake: holds the chosen end time until an energy level is picked.
   const [wakeAt, setWakeAt] = useState<number | null>(null);
+  // Morning sleep check-in: whether its sheet is open, and the submitted answers
+  // held until an energy level is picked (mirroring the nap wake flow).
+  const [sleepWakeOpen, setSleepWakeOpen] = useState(false);
+  const [pendingSleep, setPendingSleep] = useState<(SleepAnswers & { endedAt: number }) | null>(
+    null,
+  );
 
   const list = events ?? [];
   const activeSpan = list.find((e) => isOngoingSpan(e)) ?? null;
   const activeNap = activeSpan && activeSpan.type === "nap" ? activeSpan : null;
+  const activeSleep = activeNap && isSleep(activeNap) ? activeNap : null;
   const lastEnergy = list.find((e) => e.type === "energy");
   const energyLevel = activeNap ? ENERGY_ASLEEP : (lastEnergy?.amount ?? DEFAULT_ENERGY);
+
+  // When the app opens with sleep mode already on, the first thing to do is end
+  // it and answer the morning questions. Only auto-prompt on the first data load
+  // so starting sleep (before bed) doesn't immediately ask about the night.
+  const promptedForWake = useRef(false);
+  useEffect(() => {
+    if (!events || promptedForWake.current) return;
+    promptedForWake.current = true;
+    if (activeSleep) setSleepWakeOpen(true);
+  }, [events, activeSleep]);
 
   const flash = (type: EventType) => {
     setJustDone(type);
@@ -97,6 +123,15 @@ export function HomePage() {
     // Starting a nap means the puppy is now asleep.
     if (type === "nap") await logEnergy(ENERGY_ASLEEP, { debounce: false });
     flash(type);
+  };
+
+  // Sleep mode is an overnight nap, flagged so the morning check-in appears and
+  // history can tell it apart from a daytime nap.
+  const startSleep = async () => {
+    if (activeSpan) return;
+    const metadata: SleepMetadata = { sleep: true };
+    await create.mutateAsync({ type: "nap", endedAt: null, endUnknown: false, metadata });
+    await logEnergy(ENERGY_ASLEEP, { debounce: false });
   };
 
   // Energy slider coupling with naps.
@@ -144,10 +179,35 @@ export function HomePage() {
     setWakeAt(null);
   };
 
+  // Morning sleep wake: record the night's answers, end the sleep at the chosen
+  // time, and log the waking energy level.
+  const confirmSleepWake = async (level: number) => {
+    if (!activeSleep || !pendingSleep) return;
+    const metadata: SleepMetadata = {
+      ...(activeSleep.metadata as Partial<SleepMetadata>),
+      sleep: true,
+      peedInCage: pendingSleep.peedInCage,
+      poopedInCage: pendingSleep.poopedInCage,
+      restlessness: pendingSleep.restlessness,
+    };
+    await update.mutateAsync({
+      id: activeSleep.id,
+      input: { endedAt: pendingSleep.endedAt, endUnknown: false, metadata },
+    });
+    await logEnergy(level, { debounce: false });
+    setPendingSleep(null);
+  };
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-[8.5rem] flex-col [&>*]:flex-1">
-        {activeNap ? (
+        {activeSleep ? (
+          <SleepBanner
+            event={activeSleep}
+            onWake={() => setSleepWakeOpen(true)}
+            onCancel={cancelNap}
+          />
+        ) : activeNap ? (
           <NapBanner
             event={activeNap}
             onWake={(endedAt) => setWakeAt(endedAt)}
@@ -207,11 +267,42 @@ export function HomePage() {
         })}
       </div>
 
+      <button
+        onClick={startSleep}
+        disabled={Boolean(activeSpan)}
+        className={cn(
+          "card mt-2 flex w-full items-center justify-center gap-2 py-4 active:scale-95",
+          Boolean(activeSpan) && "pointer-events-none opacity-40",
+        )}
+      >
+        <span className="text-3xl">🌙</span>
+        <span className="text-sm font-semibold">Start sleep mode</span>
+      </button>
+
       {wakeAt !== null && (
         <EnergyPopup
           title="They're awake — how's their energy?"
           onSelect={confirmWake}
           onCancel={() => setWakeAt(null)}
+        />
+      )}
+
+      {sleepWakeOpen && activeSleep && (
+        <SleepWakeSheet
+          event={activeSleep}
+          onSubmit={(result) => {
+            setPendingSleep(result);
+            setSleepWakeOpen(false);
+          }}
+          onCancel={() => setSleepWakeOpen(false)}
+        />
+      )}
+
+      {pendingSleep !== null && (
+        <EnergyPopup
+          title="Good morning — how's her energy now?"
+          onSelect={confirmSleepWake}
+          onCancel={() => setPendingSleep(null)}
         />
       )}
     </div>

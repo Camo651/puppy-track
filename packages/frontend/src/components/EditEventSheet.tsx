@@ -1,11 +1,15 @@
 import { useState } from "react";
 import {
   EVENT_META,
+  eventDisplayMeta,
   isOngoingSpan,
+  isSleep,
   type PuppyEvent,
+  type SleepMetadata,
   type UpdateEventInput,
 } from "@puppy-track/common";
 import { useDeleteEvent, useUpdateEvent } from "@/hooks/useApi";
+import { SleepQuestions, type SleepAnswers } from "@/components/SleepQuestions";
 import { cn } from "@/lib/cn";
 
 function toLocalInput(ts: number): string {
@@ -31,7 +35,9 @@ function initialEndMode(event: PuppyEvent): EndMode {
 
 export function EditEventSheet({ event, onClose }: { event: PuppyEvent; onClose: () => void }) {
   const meta = EVENT_META[event.type];
+  const display = eventDisplayMeta(event);
   const isSpan = meta.kind === "span";
+  const sleep = isSleep(event);
   const update = useUpdateEvent();
   const del = useDeleteEvent();
 
@@ -40,9 +46,21 @@ export function EditEventSheet({ event, onClose }: { event: PuppyEvent; onClose:
   const [endAt, setEndAt] = useState(toLocalInput(event.endedAt ?? Date.now()));
   const [amount, setAmount] = useState(event.amount != null ? String(event.amount) : "");
   const [notes, setNotes] = useState(event.notes ?? "");
+  const [sleepAnswers, setSleepAnswers] = useState<SleepAnswers>(() => {
+    const m = (event.metadata ?? {}) as Partial<SleepMetadata>;
+    return {
+      peedInCage: Boolean(m?.peedInCage),
+      poopedInCage: Boolean(m?.poopedInCage),
+      restlessness: typeof m?.restlessness === "number" ? m.restlessness : 0,
+    };
+  });
 
   const save = async () => {
     const input: UpdateEventInput = { occurredAt: new Date(occurredAt).getTime() };
+
+    if (sleep) {
+      input.metadata = { sleep: true, ...sleepAnswers } satisfies SleepMetadata;
+    }
 
     if (isSpan) {
       if (endMode === "now") {
@@ -83,7 +101,7 @@ export function EditEventSheet({ event, onClose }: { event: PuppyEvent; onClose:
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center gap-2 text-lg font-bold">
-          <span className="text-2xl">{meta.emoji}</span> Edit {meta.label.toLowerCase()}
+          <span className="text-2xl">{display.emoji}</span> Edit {display.label.toLowerCase()}
         </div>
 
         <label className="mb-3 block text-sm">
@@ -141,6 +159,13 @@ export function EditEventSheet({ event, onClose }: { event: PuppyEvent; onClose:
               className="w-full rounded-field border border-line bg-surface px-3 py-2"
             />
           </label>
+        )}
+
+        {sleep && (
+          <div className="mb-4">
+            <span className="mb-2 block text-sm text-muted">The night</span>
+            <SleepQuestions value={sleepAnswers} onChange={setSleepAnswers} />
+          </div>
         )}
 
         <label className="mb-4 block text-sm">

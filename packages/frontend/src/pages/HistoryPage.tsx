@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
-import { EVENT_META, isOngoingSpan, isSpanType, type PuppyEvent } from "@puppy-track/common";
+import {
+  eventDisplayMeta,
+  isOngoingSpan,
+  isSpanType,
+  sleepSummary,
+  type PuppyEvent,
+} from "@puppy-track/common";
 import { useEvents } from "@/hooks/useApi";
 import { EditEventSheet } from "@/components/EditEventSheet";
 import { clockTime, dayLabel } from "@/lib/time";
@@ -40,16 +46,20 @@ export function HistoryPage() {
         <section key={group.day}>
           <div className="mb-2 text-sm font-semibold text-muted">{group.day}</div>
           <ul className="card divide-y divide-line/60">
-            {group.items.map((e) => (
+            {group.items.map((e) => {
+              const meta = eventDisplayMeta(e);
+              const summary = sleepSummary(e);
+              return (
               <li key={e.id}>
                 <button
                   onClick={() => setEditing(e)}
                   className="flex w-full items-center justify-between px-4 py-3 text-left active:bg-brand-soft/40"
                 >
                   <span className="flex items-center gap-3">
-                    <span className="text-xl">{EVENT_META[e.type].emoji}</span>
+                    <span className="text-xl">{meta.emoji}</span>
                     <span>
-                      <span className="block font-medium">{EVENT_META[e.type].label}</span>
+                      <span className="block font-medium">{meta.label}</span>
+                      {summary && <span className="block text-xs text-muted">{summary}</span>}
                       {e.notes && <span className="block text-xs text-muted">{e.notes}</span>}
                     </span>
                     {e.amount != null && (
@@ -76,7 +86,8 @@ export function HistoryPage() {
                   </span>
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
       ))}

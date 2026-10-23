@@ -112,6 +112,57 @@ export function isOngoingSpan(e: Pick<PuppyEvent, "type" | "endedAt" | "endUnkno
   return isSpanType(e.type) && e.endedAt === null && !e.endUnknown;
 }
 
+// Overnight sleep is stored as a `nap` event flagged with `sleep: true` in its
+// metadata, so it reuses all nap-based analysis, prediction, and history. The
+// remaining fields capture the morning check-in answers.
+export interface SleepMetadata extends Record<string, unknown> {
+  sleep: true;
+  peedInCage?: boolean;
+  poopedInCage?: boolean;
+  restlessness?: number;
+}
+
+export function isSleep(e: Pick<PuppyEvent, "type" | "metadata">): boolean {
+  return e.type === "nap" && Boolean((e.metadata as { sleep?: unknown } | null)?.sleep);
+}
+
+export const SLEEP_META = { label: "Sleep", emoji: "🌙" } as const;
+
+// Display label/emoji for an event, distinguishing overnight sleep from a nap
+// even though both share the `nap` event type.
+export function eventDisplayMeta(
+  e: Pick<PuppyEvent, "type" | "metadata">,
+): { label: string; emoji: string } {
+  if (isSleep(e)) return { label: SLEEP_META.label, emoji: SLEEP_META.emoji };
+  const meta = EVENT_META[e.type];
+  return { label: meta.label, emoji: meta.emoji };
+}
+
+// How restless the puppy was overnight, calm to disruptive. Stored as the index
+// in sleep metadata's `restlessness` field.
+export const RESTLESSNESS_LEVELS = [
+  "Slept soundly",
+  "A little restless",
+  "Restless",
+  "Very restless",
+] as const;
+
+export function restlessnessLabel(level: number): string {
+  const i = Math.max(0, Math.min(RESTLESSNESS_LEVELS.length - 1, Math.round(level)));
+  return RESTLESSNESS_LEVELS[i];
+}
+
+// A one-line summary of the morning check-in, or null if there is nothing to show.
+export function sleepSummary(e: Pick<PuppyEvent, "type" | "metadata">): string | null {
+  if (!isSleep(e)) return null;
+  const m = (e.metadata ?? {}) as Partial<SleepMetadata>;
+  const parts: string[] = [];
+  if (m.peedInCage) parts.push("Peed in cage");
+  if (m.poopedInCage) parts.push("Pooped in cage");
+  if (typeof m.restlessness === "number") parts.push(restlessnessLabel(m.restlessness));
+  return parts.length ? parts.join(" · ") : null;
+}
+
 export interface PredictionFactor {
   key: string;
   label: string;
