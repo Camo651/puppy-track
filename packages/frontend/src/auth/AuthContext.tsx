@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { API_ROUTES, type User } from "@puppy-track/common";
 import { api } from "@/api/client";
-import { clearToken, getToken, setToken } from "@/api/http";
+import { ApiError, clearToken, setToken } from "@/api/http";
 
 interface AuthState {
   user: User | null;
@@ -18,17 +18,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
-    if (!getToken()) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
     try {
       const u = await api.me();
       setUser(u);
-    } catch {
-      clearToken();
-      setUser(null);
+    } catch (err) {
+      // Only a real 401 means the session is gone. Transient failures (network,
+      // cold start) must not drop a valid session.
+      if (err instanceof ApiError && err.status === 401) {
+        clearToken();
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

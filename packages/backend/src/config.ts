@@ -73,3 +73,15 @@ export const config = {
 };
 
 export const SESSION_TTL_MS = config.sessionTtlDays * 24 * 60 * 60 * 1000;
+
+export const SESSION_COOKIE = "puppy-track-session";
+
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: config.isProd,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_TTL_MS,
+  };
+}

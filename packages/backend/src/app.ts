@@ -1,5 +1,6 @@
 import path from "path";
 import express, { type NextFunction, type Request, type Response } from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import { API_PREFIX } from "@puppy-track/common";
 import { config } from "./config";
@@ -15,6 +16,7 @@ export function createApp(): express.Express {
   app.set("trust proxy", true);
   app.use(httpLogger);
   app.use(cors({ origin: true }));
+  app.use(cookieParser());
   app.use(express.json({ limit: "256kb" }));
 
   app.use(API_PREFIX, apiRouter);

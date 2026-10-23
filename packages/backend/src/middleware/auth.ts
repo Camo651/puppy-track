@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { and, db, eq, gt, sessions, users } from "@puppy-track/db";
 import type { User } from "@puppy-track/common";
-import { SESSION_TTL_MS } from "../config";
+import { SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "../config";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -17,6 +17,12 @@ function bearer(req: Request): string | null {
   const header = req.header("authorization") || "";
   const match = /^Bearer\s+(.+)$/i.exec(header);
   return match ? match[1] : null;
+}
+
+function sessionToken(req: Request): string | null {
+  const cookieToken = req.cookies?.[SESSION_COOKIE];
+  if (typeof cookieToken === "string" && cookieToken) return cookieToken;
+  return bearer(req);
 }
 
 export function resolveSession(token: string): User | null {
@@ -51,7 +57,7 @@ export function resolveSession(token: string): User | null {
 }
 
 export function requireUser(req: Request, res: Response, next: NextFunction): void {
-  const token = bearer(req);
+  const token = sessionToken(req);
   if (!token) {
     res.status(401).json({ error: "unauthorized" });
     return;
@@ -63,5 +69,6 @@ export function requireUser(req: Request, res: Response, next: NextFunction): vo
   }
   req.user = user;
   req.sessionToken = token;
+  res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
   next();
 }

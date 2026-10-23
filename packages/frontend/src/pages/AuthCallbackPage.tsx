@@ -1,23 +1,15 @@
-import { useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/auth/AuthContext";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function AuthCallbackPage() {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { signInWithToken } = useAuth();
-  const done = useRef(false);
 
+  // The backend sets the session cookie and redirects straight to "/", so this
+  // route is only a fallback for older links. The session is already active, so
+  // just send the user home where RequireAuth resolves it.
   useEffect(() => {
-    if (done.current) return;
-    done.current = true;
-    const token = params.get("token");
-    if (!token) {
-      navigate("/login?error=server_error", { replace: true });
-      return;
-    }
-    void signInWithToken(token).then(() => navigate("/", { replace: true }));
-  }, [params, navigate, signInWithToken]);
+    navigate("/", { replace: true });
+  }, [navigate]);
 
   return (
     <div className="flex min-h-full items-center justify-center text-muted">Signing you in…</div>

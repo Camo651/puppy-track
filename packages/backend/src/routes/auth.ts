@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { Router } from "express";
 import { db, eq, sessions, users } from "@puppy-track/db";
-import { config, SESSION_TTL_MS } from "../config";
+import { config, SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "../config";
 import { areaLog, serializeError } from "../logger";
 import { requireUser } from "../middleware/auth";
 
@@ -113,7 +113,8 @@ authRouter.get("/auth/discord/callback", async (req, res) => {
 
     const sessionToken = createSession(discordUser.id);
     log.info("user signed in", { id: discordUser.id, username: discordUser.username });
-    res.redirect(`${config.frontendUrl}/auth/callback?token=${encodeURIComponent(sessionToken)}`);
+    res.cookie(SESSION_COOKIE, sessionToken, sessionCookieOptions());
+    res.redirect(`${config.frontendUrl}/`);
   } catch (e) {
     log.error("discord callback error", { err: serializeError(e) });
     fail("server_error");
@@ -128,5 +129,7 @@ authRouter.post("/auth/logout", requireUser, (req, res) => {
   if (req.sessionToken) {
     db.delete(sessions).where(eq(sessions.token, req.sessionToken)).run();
   }
+  const { maxAge: _maxAge, ...clearOptions } = sessionCookieOptions();
+  res.clearCookie(SESSION_COOKIE, clearOptions);
   res.json({ ok: true });
 });
